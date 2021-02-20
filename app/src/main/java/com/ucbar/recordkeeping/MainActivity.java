@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.Manifest;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -19,6 +20,7 @@ import android.os.Vibrator;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -32,6 +34,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.RoundingMode;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -40,20 +44,24 @@ public class MainActivity extends AppCompatActivity {
 
     //39102-55R00|153000-34700101|010221|2|00466
     String constant="39102-55R00";
-    TextView shit;
-    Button add;
+    TextView shit,scancount_txt;
+    Button add,save;
     EditText input_txt;
     protected static final int WRITE_REQUEST_CODE =1;
     String[] storage = {Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.CAMERA};
     MediaPlayer mp;
+    int count=0;
+    Dialog saveDialog;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         shit=findViewById(R.id.shit);
+        scancount_txt=findViewById(R.id.scancount_txt);
         input_txt=findViewById(R.id.input_txt);
         add=findViewById(R.id.add_btn);
+        save=findViewById(R.id.save_btn);
 
         mp= MediaPlayer.create(this, R.raw.error);
         Vibrator vi= (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -65,9 +73,7 @@ public class MainActivity extends AppCompatActivity {
 
         }
 
-        createfirsttxtfile();
-        shit.setText(descending());
-
+        createfirstfolder();
 
 
         input_txt.setOnKeyListener(new View.OnKeyListener() {
@@ -85,38 +91,20 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-                boolean result=checkinput(input_txt.getText().toString());
-                if(result){
-                    boolean returnresult=checkduplicate(input_txt.getText().toString());
-                    if(returnresult){
-                        mp.start();
-                        Toast toast = Toast.makeText(MainActivity.this,"Duplicate Value Found", Toast.LENGTH_LONG);
-                        toast.getView().setBackgroundColor(Color.parseColor("#FF0000"));
-                        toast.show();
-
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            vi.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE));
-                        } else {
-                            //deprecated in API 26
-                            vi.vibrate(500);
-                        }
-
-                        input_txt.selectAll();
-                    }else {
-                        writeintxtfile(input_txt.getText().toString());
-                        shit.setText(descending());
+                        shit.setText(writeinstring(input_txt.getText().toString()));
+                        count++;
+                        scancount_txt.setText(String.valueOf(count));
+                        input_txt.setText("");
                         input_txt.setFocusable(true);
                         input_txt.requestFocus();
                     }
-                }else{
-                    Toast toast = Toast.makeText(MainActivity.this,"Bin not Match", Toast.LENGTH_LONG);
-                    toast.getView().setBackgroundColor(Color.parseColor("#FF0000"));
-                    toast.show();
-                }
 
+        });
 
-
-
+        save.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showsavedialog();
             }
         });
 
@@ -126,8 +114,7 @@ public class MainActivity extends AppCompatActivity {
         switch (requestCode) {
             case WRITE_REQUEST_CODE:
                 if(grantResults[0] == PackageManager.PERMISSION_GRANTED){
-                    createfirsttxtfile();
-                    shit.setText(descending());
+                    createfirstfolder();
                 }
                 else{
                     //Permission denied.
@@ -136,75 +123,80 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public boolean checkinput(String input){
-        boolean result=false;
-        if(input.contains("|")){
+    public void showsavedialog(){
+        saveDialog = new Dialog(this);
+        saveDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        saveDialog.setContentView(R.layout.save_dialog);
 
-            String inputarr[]=input.split("\\|");
-            String firstvalue=inputarr[0].toString();
-            if(firstvalue.equals(constant)){
-                result=true;
+        Button okbtn = saveDialog.findViewById(R.id.btn_ok);
+        EditText filenametxt = saveDialog.findViewById(R.id.filename_txt);
+
+        okbtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(!(filenametxt.equals(""))){
+                    writeincsvfile(shit.getText().toString(),filenametxt.getText().toString());
+                    saveDialog.dismiss();
+                }else{
+                    Toast.makeText(getApplicationContext(),"Filename can't be Empty",Toast.LENGTH_LONG).show();
+                }
             }
-        }else{
+        });
+        saveDialog.show();
 
-            Toast toast = Toast.makeText(MainActivity.this,"Scan Data is Invalid", Toast.LENGTH_LONG);
-            toast.getView().setBackgroundColor(Color.parseColor("#FF0000"));
-            toast.show();
-
-        }
-        return result;
     }
 
-    public void writeintxtfile(String input){
-        String currentdata=readtxtfile();
-        String writedata=null;
-        if(currentdata.isEmpty()){
-             writedata =input;
-        }else{
-            writedata =currentdata+input;
+    public String writeinstring(String input){
+        String inputdata=shit.getText().toString();
+        if(inputdata.equals("")){
+            inputdata=input;
+        }else if(!inputdata.equals("")){
+            inputdata=inputdata+"\n"+input;
         }
-
-        File root = new File(Environment.getExternalStorageDirectory()+File.separator+ "/UCBAR");
-        try {
-            File gpxfile = new File(root, "record.txt");
-            FileWriter writer = new FileWriter(gpxfile);
-            writer.append(writedata);
-
-            writer.flush();
-            writer.close();
-            input_txt.setText("");
-
-        } catch (Exception e) {
-
-        }
+        return  inputdata;
     }
 
-    public String readtxtfile(){
-        String datafromfile=null;
-        File root = new File(Environment.getExternalStorageDirectory()+File.separator+ "/UCBAR");
+    public void writeincsvfile(String inputdata,String filename){
 
-        File file = new File(root,"record.txt");
-        StringBuilder text = new StringBuilder();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss");
+        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
 
-        try {
-            BufferedReader br = new BufferedReader(new FileReader(file));
-            String line;
 
-            while ((line = br.readLine()) != null) {
-                text.append(line);
-                text.append('\n');
+        File file = new File(Environment.getExternalStorageDirectory()+File.separator+ "/UCBAR");
+
+        boolean success = false;
+
+            try {
+                File gpxfile = new File(file, filename+timestamp+".csv");
+                FileWriter writer = new FileWriter(gpxfile);
+                writer.append(inputdata);
+
+                writer.flush();
+                writer.close();
+                Toast.makeText(getApplicationContext(),"File Save Successfully",Toast.LENGTH_LONG).show();
+                count=0;
+                scancount_txt.setText("0");
+                shit.setText("");
+            } catch (Exception e) {
+                Toast.makeText(getApplicationContext(),"File Save Failed",Toast.LENGTH_LONG).show();
             }
-            br.close();
-        }
-        catch (IOException e) {
-            //You'll need to add proper error handling here
-        }
-        datafromfile=text.toString();
-        return datafromfile;
+
 
     }
 
-    public void createfirsttxtfile(){
+    public void createfirstfolder(){
+        File file = new File(Environment.getExternalStorageDirectory()+File.separator+ "/UCBAR");
+
+        boolean success = false;
+        if (!file.exists()) {
+            success=file.mkdir();
+        }
+        if(success){
+            Toast.makeText(getApplicationContext(),"Folder Created Successfully",Toast.LENGTH_LONG).show();
+        }
+    }
+
+    public void createcsvfile(String filename){
 
 
         File file = new File(Environment.getExternalStorageDirectory()+File.separator+ "/UCBAR");
@@ -216,12 +208,12 @@ public class MainActivity extends AppCompatActivity {
             if(success){
 
                 try {
-                    File gpxfile = new File(file, "record.txt");
+                    File gpxfile = new File(file, filename+".csv");
                     FileWriter writer = new FileWriter(gpxfile);
                     writer.append("");
                     writer.flush();
                     writer.close();
-                    Toast.makeText(getApplicationContext(),"Folder Created Successfully",Toast.LENGTH_LONG).show();
+                    Toast.makeText(getApplicationContext(),"File Save Successfully",Toast.LENGTH_LONG).show();
                 } catch (Exception e) {
 
                 }
@@ -229,28 +221,8 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public boolean checkduplicate(String input){
-        boolean result=false;
-        if(readtxtfile().isEmpty()){
 
-        }else{
-            String datainfile[]=readtxtfile().split("\n");
-            int duplicatecount=0;
-
-            for(int i=0;i<datainfile.length;i++){
-                if(input.equals(datainfile[i])){
-                    duplicatecount++;
-
-                }
-            }
-            if(duplicatecount>0){
-                result=true;
-            }
-        }
-        return result;
-    }
-
-    public String descending(){
+   /* public String descending(){
         String data=readtxtfile();
         String datainfile[]=readtxtfile().split("\n");
 
@@ -263,7 +235,7 @@ public class MainActivity extends AppCompatActivity {
             reversedata=reversedata+reversedArray[i]+"\n";
         }
         return  reversedata;
-    }
+    }*/
 
 
 
