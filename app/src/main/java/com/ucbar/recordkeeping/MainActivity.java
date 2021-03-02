@@ -2,6 +2,7 @@ package com.ucbar.recordkeeping;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.ViewCompat;
 
 import android.Manifest;
 import android.app.Dialog;
@@ -11,6 +12,7 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.media.MediaScannerConnection;
 import android.media.ToneGenerator;
 import android.os.Build;
 import android.os.Bundle;
@@ -23,6 +25,7 @@ import android.view.View;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -44,9 +47,10 @@ public class MainActivity extends AppCompatActivity {
 
     //39102-55R00|153000-34700101|010221|2|00466
     String constant="39102-55R00";
-    TextView shit,scancount_txt;
+    TextView scandata,scancount_txt;
     Button add,save;
     EditText input_txt;
+    ScrollView scroll;
     protected static final int WRITE_REQUEST_CODE =1;
     String[] storage = {Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.CAMERA};
     MediaPlayer mp;
@@ -57,11 +61,13 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        shit=findViewById(R.id.shit);
+        scandata=findViewById(R.id.scandata);
         scancount_txt=findViewById(R.id.scancount_txt);
         input_txt=findViewById(R.id.input_txt);
         add=findViewById(R.id.add_btn);
         save=findViewById(R.id.save_btn);
+
+        scroll=findViewById(R.id.scroll);
 
         mp= MediaPlayer.create(this, R.raw.error);
         Vibrator vi= (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -73,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
 
         }
 
-        createfirstfolder();
+       // createfirstfolder();
 
 
         input_txt.setOnKeyListener(new View.OnKeyListener() {
@@ -91,14 +97,30 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-                        shit.setText(writeinstring(input_txt.getText().toString()));
-                        count++;
-                        scancount_txt.setText(String.valueOf(count));
-                        input_txt.setText("");
-                        input_txt.setFocusable(true);
-                        input_txt.requestFocus();
-                    }
+                boolean result = checkduplicate(input_txt.getText().toString());
+                if (result) {
+                    mp.start();
+                    Toast toast = Toast.makeText(MainActivity.this, "Duplicate Value Found", Toast.LENGTH_LONG);
+                    toast.getView().setBackgroundColor(Color.parseColor("#FF0000"));
+                    toast.show();
 
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        vi.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE));
+                    } else {
+                        //deprecated in API 26
+                        vi.vibrate(500);
+                    }
+                    input_txt.selectAll();
+                } else {
+                    scandata.setText(writeinstring(input_txt.getText().toString()));
+                    count++;
+                    scroll.fullScroll(View.FOCUS_DOWN);
+                    scancount_txt.setText(String.valueOf(count));
+                    input_txt.setText("");
+                    input_txt.setFocusable(true);
+                    input_txt.requestFocus();
+                }
+            }
         });
 
         save.setOnClickListener(new View.OnClickListener() {
@@ -114,7 +136,7 @@ public class MainActivity extends AppCompatActivity {
         switch (requestCode) {
             case WRITE_REQUEST_CODE:
                 if(grantResults[0] == PackageManager.PERMISSION_GRANTED){
-                    createfirstfolder();
+                    //createfirstfolder();
                 }
                 else{
                     //Permission denied.
@@ -135,7 +157,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if(!(filenametxt.equals(""))){
-                    writeincsvfile(shit.getText().toString(),filenametxt.getText().toString());
+                    writeincsvfile(scandata.getText().toString(),filenametxt.getText().toString());
                     saveDialog.dismiss();
                 }else{
                     Toast.makeText(getApplicationContext(),"Filename can't be Empty",Toast.LENGTH_LONG).show();
@@ -146,8 +168,33 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+
+    public boolean checkduplicate(String input){
+        boolean result=false;
+        String currentdata=scandata.getText().toString();
+
+        if(currentdata.isEmpty()){
+
+        }else{
+            String datainfile[]=currentdata.split("\n");
+            int duplicatecount=0;
+
+            for(int i=0;i<datainfile.length;i++){
+                if(input.equals(datainfile[i])){
+                    duplicatecount++;
+                }
+            }
+
+            if(duplicatecount>0){
+                result=true;
+            }
+        }
+
+        return result;
+    }
+
     public String writeinstring(String input){
-        String inputdata=shit.getText().toString();
+        String inputdata=scandata.getText().toString();
         if(inputdata.equals("")){
             inputdata=input;
         }else if(!inputdata.equals("")){
@@ -162,30 +209,63 @@ public class MainActivity extends AppCompatActivity {
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
 
 
-        File file = new File(Environment.getExternalStorageDirectory()+File.separator+ "/UCBAR");
+        File file = new File(Environment.getExternalStorageDirectory()+File.separator+ "UCBARr");
 
+        MediaScannerConnection.scanFile(this, new String[] {file.toString()}, null, null);  //scanning folder
         boolean success = false;
+        if (!file.exists()) {
+            success=file.mkdir();
+        }else if(file.exists()){
+            success=true;
+        }
+        if(success) {
 
             try {
-                File gpxfile = new File(file, filename+timestamp+".csv");
-                FileWriter writer = new FileWriter(gpxfile);
+
+                File outputfile = new File(file, filename + timestamp.toString().replace(":", "-") + ".csv");
+                FileWriter writer = new FileWriter(outputfile);
                 writer.append(inputdata);
 
                 writer.flush();
                 writer.close();
-                Toast.makeText(getApplicationContext(),"File Save Successfully",Toast.LENGTH_LONG).show();
-                count=0;
-                scancount_txt.setText("0");
-                shit.setText("");
-            } catch (Exception e) {
-                Toast.makeText(getApplicationContext(),"File Save Failed",Toast.LENGTH_LONG).show();
-            }
 
+                Toast.makeText(getApplicationContext(), "File Save Successfully", Toast.LENGTH_LONG).show();
+
+                count = 0;
+                scancount_txt.setText("0");
+                scandata.setText("");
+            } catch (Exception e) {
+                Log.d("Shit",e.toString());
+                Toast.makeText(getApplicationContext(), "File Save Failed", Toast.LENGTH_LONG).show();
+            }
+        }
 
     }
 
+
+    private static void fixUsbVisibleFolder(Context context, File folder) {
+        if (!folder.exists()) {
+            folder.mkdir();
+            try {
+                File file = new File(folder, "service.tmp");//workaround for folder to be visible via USB
+                file.createNewFile();
+                MediaScannerConnection.scanFile(context,
+                        new String[]{file.toString()},
+                        null, (path, uri) -> {
+                            file.delete();
+                            MediaScannerConnection.scanFile(context,
+                                    new String[]{file.toString()} ,
+                                    null, null);
+                        });
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
     public void createfirstfolder(){
-        File file = new File(Environment.getExternalStorageDirectory()+File.separator+ "/UCBAR");
+        File file = new File(Environment.getExternalStorageDirectory()+File.separator+ "/UCBAR/");
 
         boolean success = false;
         if (!file.exists()) {
