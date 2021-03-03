@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#344955"
+    android:background="#31435B"
     tools:context=".MainActivity">
 
     <RelativeLayout
@@ -32,7 +32,7 @@
             android:layout_marginTop="50dp"
             android:hint="Scan the Data"
             android:maxLines="4"
-            android:textColorHint="#009D97"
+            android:textColorHint="#06C1FF"
             android:textColor="@color/white"
             android:imeOptions="actionDone"
             android:selectAllOnFocus="true" />
@@ -45,7 +45,7 @@
             android:layout_marginTop="10dp"
             android:layout_alignParentStart="true"
             android:text="Add"
-            android:visibility="visible" />
+            android:visibility="gone" />
 
         <Button
             android:id="@+id/save_btn"
@@ -63,22 +63,22 @@
 
         <TextView
             android:id="@+id/scancount_lbl"
-            android:layout_below="@+id/save_btn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="10dp"
+            android:layout_below="@+id/input_txt"
             android:textColor="@color/white"
             android:text="SCAN COUNT : " />
 
         <TextView
             android:id="@+id/scancount_txt"
-            android:layout_below="@+id/save_btn"
+            android:layout_below="@+id/input_txt"
             android:layout_toRightOf="@+id/scancount_lbl"
             android:layout_marginStart="10dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="25sp"
-            android:textColor="#20B2AA"
+            android:textColor="#06C1FF"
             android:text="0" />
 
 
@@ -122,14 +122,31 @@
 
         <TextView
             android:id="@+id/develope"
+            android:layout_below="@+id/frame"
+            android:layout_marginTop="8dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
-            android:layout_alignParentBottom="true"
             android:gravity="center_horizontal"
             android:text="Developed by : UC BAR INFOTECH PVT LTD"
             android:textStyle="bold"
-            android:textColor="#FF0000" />
+            android:textSize="18dp"
+            android:textColor="#FE5430" />
+
+
+        <TextView
+            android:id="@+id/developsite"
+            android:layout_below="@+id/develope"
+            android:layout_marginTop="3dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:text="www.ucbarinfotech.com"
+            android:textStyle="bold"
+            android:textSize="15dp"
+            android:textColor="	#1E90FF" />
+
+
+
     </RelativeLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

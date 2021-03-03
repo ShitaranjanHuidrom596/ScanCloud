@@ -209,7 +209,7 @@ public class MainActivity extends AppCompatActivity {
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
 
 
-        File file = new File(Environment.getExternalStorageDirectory()+File.separator+ "UCBARr");
+        File file = new File(Environment.getExternalStorageDirectory()+File.separator+ "Smarten");
 
         MediaScannerConnection.scanFile(this, new String[] {file.toString()}, null, null);  //scanning folder
         boolean success = false;
