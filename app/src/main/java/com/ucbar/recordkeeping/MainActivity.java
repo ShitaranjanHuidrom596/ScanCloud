@@ -221,9 +221,10 @@ public class MainActivity extends AppCompatActivity {
         if(success) {
 
             try {
-
-                File outputfile = new File(file, filename + timestamp.toString().replace(":", "-") + ".csv");
+                String docname=timestamp.toString().replace(":", "-");
+                File outputfile = new File(file, filename + docname+ ".csv");
                 FileWriter writer = new FileWriter(outputfile);
+                inputdata=filename+"\n"+inputdata;
                 writer.append(inputdata);
 
                 writer.flush();
