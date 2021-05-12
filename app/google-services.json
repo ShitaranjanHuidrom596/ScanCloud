@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "859322837451",
+    "firebase_url": "https://scanrecord-c35dd-default-rtdb.firebaseio.com",
+    "project_id": "scanrecord-c35dd",
+    "storage_bucket": "scanrecord-c35dd.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:859322837451:android:38ee93391bf8e836ae6e4e",
+        "android_client_info": {
+          "package_name": "com.ucbar.recordkeeping"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "859322837451-up8dinghut2hbbhl79jgtsohq61n2m31.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCd1RkoKre-xpk4AoOMFSE5yCGNMzS0fqI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "859322837451-up8dinghut2hbbhl79jgtsohq61n2m31.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -2,18 +2,14 @@ package com.ucbar.recordkeeping;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.ViewCompat;
 
 import android.Manifest;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.graphics.Color;
-import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaScannerConnection;
-import android.media.ToneGenerator;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -29,19 +25,14 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.BufferedReader;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.math.RoundingMode;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -56,6 +47,8 @@ public class MainActivity extends AppCompatActivity {
     MediaPlayer mp;
     int count=0;
     Dialog saveDialog;
+    FirebaseDatabase database;
+    DatabaseReference myRef;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -68,6 +61,11 @@ public class MainActivity extends AppCompatActivity {
         save=findViewById(R.id.save_btn);
 
         scroll=findViewById(R.id.scroll);
+
+        database = FirebaseDatabase.getInstance();
+        myRef = database.getReference();
+
+
 
         mp= MediaPlayer.create(this, R.raw.error);
         Vibrator vi= (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -87,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 if((event.getAction()==KeyEvent.ACTION_DOWN)&&(keyCode==KeyEvent.KEYCODE_ENTER)){
                     add.performClick();
+
                     return true;
                 }
                 return false;
@@ -96,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
         add.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
 
                 boolean result = checkduplicate(input_txt.getText().toString());
                 if (result) {
@@ -156,8 +156,19 @@ public class MainActivity extends AppCompatActivity {
         okbtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(!(filenametxt.equals(""))){
-                    writeincsvfile(scandata.getText().toString(),filenametxt.getText().toString());
+                if(!(filenametxt.getText().equals(""))){
+              //      writeincsvfile(scandata.getText().toString(),filenametxt.getText().toString());
+
+                    InputData inputData=new InputData();
+                    inputData.scaninput=scandata.getText().toString().replace("\n",",");
+                    myRef.child("ScanData").child(filenametxt.getText().toString()).setValue(inputData);
+
+                    Toast.makeText(getApplicationContext(),"Success",Toast.LENGTH_LONG).show();
+                    count = 0;
+                    scancount_txt.setText("0");
+                    scandata.setText("");
+
+
                     saveDialog.dismiss();
                 }else{
                     Toast.makeText(getApplicationContext(),"Filename can't be Empty",Toast.LENGTH_LONG).show();
